@@ -83,6 +83,36 @@ for stop in stops_id:
 		stops_dist_map[stop][stop1] = distance_lat_lon(p1,p2)
 
 
+'''
+I want this to return a list, possibly of pairs, of the valid ordering
+of bus stops and routes to take from start to end 
+
+Current assumption is that a person wouldn't want to walk more than
+2 kilometers from a given bus stop or start/end point, providing a radius
+argument will adjust this is someone is willing to walk more or less to get
+to a bus stop
+
+using A* search with cost function f(x)=h(x)+g(x) where in this case
+
+h(x) = distance between current stop and end 
+g(x) = time taken so far on trip from start to current stop 
+
+Need to compute distance from end point before adding
+stops on to the priority queue to determine if it might be best to just walk
+
+
+'''
+def shortest_trip(start, end,radius=2.0):
+	pq = Q.PriorityQueue()
+	for stop in stops_gps:
+		dist = distance_lat_lon(start,stops_gps[stop])
+		if dist <= radius:
+			cost = dist/average_walking_speed
+			pq.put(cost,stop)
+		else:
+			print "There are no nearby stops to that starting point."
+			return []
+
 def get_nearest_stop(pt):
 	min_dist = None
 	min_key = None
@@ -174,33 +204,41 @@ if __name__ == "__main__":
 NEED TO RECALCULATE THIS ON A DAY THAT THE 102 runs, because all 102 data is missing from 
 routes
 
->>> routes = {}
->>> for stop in stops_id:
-...    blist = [line.split('  ')[1] for line in stop_times(stop)]
-...    for item in list:
-...        routes[item]=item
+routes = {}
+for stop in stops_id:
+   blist = [line.split('  ')[1] for line in stop_times(stop)]
+   for item in blist:
+       routes[item]=item
 
 
->>> for route in routes:
-...     routes[route] = []
-...     bus_num = convert(route.split(' ')[0])
-...     for stop in bus_num_stops[bus_num]:
-...         blist = [line.split('  ')[1] for line in stop_times(stop)]
-...         if route in blist:
-...             routes[route]+=[stop] 
+for route in routes:
+    routes[route] = []
+    bus_num = convert(route.split(' ')[0])
+    for stop in bus_num_stops[bus_num]:
+        blist = [line.split('  ')[1] for line in stop_times(stop)]
+        if route in blist:
+            routes[route]+=[stop] 
+
+def convert(n):
+	if n == '3N' or n == '3C':
+		return 3
+	elif n == '7A':
+		return 7
+	else:
+		return int(n)
 
 bus_nums = [1,2,3,7,8,9,13,14,15,36,45,60,75,102]
 bus_num_stops = {}
 
->>> for bus in bus_nums:
-...     bus_num_stops[bus] = []
-...     stops_url = base_url+str(bus)
-...     response = urllib2.urlopen(stops_url)
-...     data = response.read()
-...     root = ET.fromstring(data)
-...     stop_list = list(list(root)[0])
-...     for stop in stop_list:
-...         bus_num_stops[bus]+=[stop.attrib['html']]
+for bus in bus_nums:
+    bus_num_stops[bus] = []
+    stops_url = base_url+str(bus)
+    response = urllib2.urlopen(stops_url)
+    data = response.read()
+    root = ET.fromstring(data)
+    stop_list = list(list(root)[0])
+    for stop in stop_list:
+        bus_num_stops[bus]+=[stop.attrib['html']]
 
 Also need to recalculate: 
 	- number_to_routes.json
